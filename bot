@@ -1,0 +1,68 @@
+<?php
+// Webhook básico para WhatsApp Cloud API
+// Plantilla para bot de compras
+
+// Obtener el contenido enviado por WhatsApp
+$input = file_get_contents("php://input");
+$data = json_decode($input, true);
+
+// Verificación del webhook (paso obligatorio de Meta)
+if (isset($_GET['hub_challenge'])) {
+    echo $_GET['hub_challenge'];
+    exit;
+}
+
+// Si llega un mensaje
+if (isset($data["entry"][0]["changes"][0]["value"]["messages"][0])) {
+
+    $message = $data["entry"][0]["changes"][0]["value"]["messages"][0];
+    $from = $message["from"]; // número del cliente
+    $text = isset($message["text"]["body"]) ? $message["text"]["body"] : "";
+
+    // ----------------------------------------
+    // RESPUESTA AUTOMÁTICA BASADA EN COMANDOS
+    // ----------------------------------------
+
+    if (strtolower($text) === "hola") {
+        enviarMensaje($from, "¡Hola! 👋\nSoy tu bot de compras.\nEscribe *pedido* para iniciar una orden.");
+    }
+    else if (strtolower($text) === "pedido") {
+        enviarMensaje($from, "Perfecto 🛒\nDime qué producto quieres y la cantidad.");
+    }
+    else {
+        // respuesta por defecto
+        enviarMensaje($from, "Recibí tu mensaje:\n\"$text\"\nEn breve lo procesaré.");
+    }
+}
+
+// ----------------------------------------
+// FUNCIÓN PARA ENVIAR MENSAJES
+// ----------------------------------------
+
+function enviarMensaje($to, $mensaje) {
+
+    $token = "EAAeBmNouXW4BQGoSQIKEMfktH6Y4bGeFoGUMJQiQy1EP1zHZCGUZAa2NCNqFlgJwJEXcNRSnc1HMLCpYZBYcKz52fTOhqn6laKRWwFgNGdyVMPnE9zB7YkFbTXcXJwgRZC8n8uJZAlfZAwHrZBhh6Wy5AwoevTbhK8IMMtbatX64eWVAgVUTVSsVLyBilTW5fM0YvyvfRZCmaVt2pnXJidgeZCqsdeM3csOlxE2IbLTiGLrdOCZB3Nrlg5rHmHN90j0SZCwZBPlL5tExKUMKm2UBW6Jt"; // <-- REEMPLAZA ESTO
+    $phone_id = "922340430959332"; // <-- REEMPLAZA ESTO
+
+    $url = "https://graph.facebook.com/v21.0/$phone_id/messages";
+
+    $data = [
+        "messaging_product" => "whatsapp",
+        "to" => $to,
+        "text" => ["body" => $mensaje]
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Content-Type: application/json",   
+        "Authorization: Bearer $token"
+    ]);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+}
+?>
+
