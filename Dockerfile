@@ -1,19 +1,16 @@
-Imagen base con PHP 8
-
+# Imagen basada en PHP 8
 FROM php:8.2-cli
 
-Crear carpeta del proyecto
+# Instalar extensiones necesarias (si las necesitas)
+RUN docker-php-ext-install pdo pdo_mysql
 
+# Copiar los archivos al contenedor
 WORKDIR /app
+COPY . /app
 
-Copiar todos los archivos del repo
+# Exponer puerto
+EXPOSE 8080
 
-COPY . .
+# Iniciar servidor PHP
+CMD php -S 0.0.0.0:8080
 
-Exponer el puerto 10000
-
-EXPOSE 10000
-
-Comando para ejecutar el servidor PHP
-
-CMD [“php”, “-S”, “0.0.0.0:10000”]
