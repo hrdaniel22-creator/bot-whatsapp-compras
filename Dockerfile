@@ -1,10 +1,10 @@
 # Imagen basada en PHP 8
 FROM php:8.2-cli
 
-# Instalar extensiones necesarias (si las necesitas)
+# Instalar extensiones necesarias (si lo requieres)
 RUN docker-php-ext-install pdo pdo_mysql
 
-# Copiar los archivos al contenedor
+# Copiar archivos al contenedor
 WORKDIR /app
 COPY . /app
 
@@ -12,5 +12,6 @@ COPY . /app
 EXPOSE 8080
 
 # Iniciar servidor PHP
-CMD php -S 0.0.0.0:8080
+CMD ["php", "-S", "0.0.0.0:8080"]
+
 
