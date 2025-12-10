@@ -1,20 +1,21 @@
 <?php
 
-// ----------------------------------------------------------
-// CONFIGURACIÓN DEL WEBHOOK
-// ----------------------------------------------------------
-$VERIFY_TOKEN = "mibot2025"; // TU VERIFY TOKEN
-$ACCESS_TOKEN = "EAAeBmNouXW4BQPM04CH9VLgDrjZA4nyiCvBtf3LzS5DPgvbabn9st5sgLy6UW6Wi6UvMbRjy8ZAEuaN5NtPUUCg5mO4uQZAxVlChY22Vx3chYkbut73hqlXjRiHeYzJgzEbOpW8f8JxWh1RcgVs3zDUHJIqOxtpeDlcoHIL2irZBmq2449QZAlzptLyYzKcwF9vijZCqIAQykZCbfhnBkcwfR9YcVbR9ZACzQcuB7SH1WZCUI6OqWJgESaMX8KUf65tObe8UBmTZBOrYd8S59M8khU";
-$PHONE_NUMBER_ID = "922340430959332"; // TU PHONE NUMBER ID
+// -----------------------------------------------------
+// ⚠️ CONFIGURACIÓN – REEMPLAZA ESTOS DATOS
+// -----------------------------------------------------
 
-// ----------------------------------------------------------
+$VERIFY_TOKEN = "mibot2025";  // <-- tu verify token
+$ACCESS_TOKEN = "TU_ACCESS_TOKEN_AQUI";  // <-- NO pegues tu token real en ChatGPT
+$PHONE_NUMBER_ID = "922340430959332";  // <-- tu Phone Number ID oficial
+
+// -----------------------------------------------------
 // VERIFICACIÓN DEL WEBHOOK (GET)
-// ----------------------------------------------------------
+// -----------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
-    $mode = $_GET['hub_mode'] ?? null;
-    $token = $_GET['hub_verify_token'] ?? null;
-    $challenge = $_GET['hub_challenge'] ?? null;
+    $mode = $_GET['hub_mode'] ?? '';
+    $token = $_GET['hub_verify_token'] ?? '';
+    $challenge = $_GET['hub_challenge'] ?? '';
 
     if ($mode === 'subscribe' && $token === $VERIFY_TOKEN) {
         header('HTTP/1.1 200 OK');
@@ -27,25 +28,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 }
 
-// ----------------------------------------------------------
+// -----------------------------------------------------
 // RECEPCIÓN DE MENSAJES (POST)
-// ----------------------------------------------------------
+// -----------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $data = json_decode(file_get_contents("php://input"), true);
+    $data = json_decode(file_get_contents('php://input'), true);
 
-    // Verifica existencia de mensajes
-    if (isset($data["entry"][0]["changes"][0]["value"]["messages"][0])) {
+    if (!empty($data["entry"][0]["changes"][0]["value"]["messages"][0])) {
 
         $message = $data["entry"][0]["changes"][0]["value"]["messages"][0];
-        $from = $message["from"]; // Número del usuario
-        $text = $message["text"]["body"] ?? ""; // Texto recibido
+        $from = $message["from"];     
+        
+        // Texto recibido
+        $text = $message["text"]["body"] ?? "";
 
-        // ------------------------------------------------------
-        // RESPUESTA AUTOMÁTICA DEL BOT
-        // ------------------------------------------------------
-        enviarMensajeWhatsApp($from, "👋 Hola! Soy tu bot de compras. ¿En qué puedo ayudarte?");
-
+        // Respuesta automática simple
+        enviarMensaje($from, "Hola 👋, recibí tu mensaje: $text");
     }
 
     header("HTTP/1.1 200 OK");
@@ -53,37 +52,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// ----------------------------------------------------------
+// -----------------------------------------------------
 // FUNCIÓN PARA ENVIAR MENSAJES A WHATSAPP
-// ----------------------------------------------------------
-function enviarMensajeWhatsApp($to, $mensaje) {
+// -----------------------------------------------------
+function enviarMensaje($to, $texto) {
     global $ACCESS_TOKEN, $PHONE_NUMBER_ID;
 
-    $url = "https://graph.facebook.com/v24.0/" . $PHONE_NUMBER_ID . "/messages";
+    $url = "https://graph.facebook.com/v24.0/$PHONE_NUMBER_ID/messages";
 
     $payload = [
         "messaging_product" => "whatsapp",
         "to" => $to,
         "type" => "text",
-        "text" => ["body" => $mensaje]
+        "text" => [ "body" => $texto ]
     ];
 
     $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         "Authorization: Bearer $ACCESS_TOKEN",
         "Content-Type: application/json"
     ]);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
 
-    $response = curl_exec($ch);
+    $result = curl_exec($ch);
     curl_close($ch);
 
-    return $response;
+    return $result;
 }
-
 ?>
+
 
 
 
