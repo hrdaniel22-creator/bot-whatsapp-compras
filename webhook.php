@@ -4,12 +4,14 @@ $VERIFY_TOKEN = "mibot2025";
 
 // 1. Verificación GET (cuando configuras el Webhook en Meta)
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    if (isset($_GET['hub_mode']) && $_GET['hub_mode'] === 'subscribe' &&
-        isset($_GET['hub_verify_token']) && $_GET['hub_verify_token'] === $VERIFY_TOKEN) {
-
-        echo $_GET['hub_challenge'];
+    if (
+        isset($_GET['hub.mode']) && $_GET['hub.mode'] === 'subscribe' &&
+        isset($_GET['hub.verify_token']) && $_GET['hub.verify_token'] === $VERIFY_TOKEN
+    ) {
+        echo $_GET['hub.challenge'];
         exit;
     }
+
     echo "Token incorrecto";
     exit;
 }
