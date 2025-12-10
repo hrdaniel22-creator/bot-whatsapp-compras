@@ -1,13 +1,15 @@
 <?php
 
-// -------------------------------
-// CONFIGURA TU VERIFY TOKEN AQUÍ
-// -------------------------------
-$VERIFY_TOKEN = "mibot2025";
+// ----------------------------------------------------------
+// CONFIGURACIÓN DEL WEBHOOK
+// ----------------------------------------------------------
+$VERIFY_TOKEN = "mibot2025"; // TU VERIFY TOKEN
+$ACCESS_TOKEN = "EAAeBmNouXW4BQPM04CH9VLgDrjZA4nyiCvBtf3LzS5DPgvbabn9st5sgLy6UW6Wi6UvMbRjy8ZAEuaN5NtPUUCg5mO4uQZAxVlChY22Vx3chYkbut73hqlXjRiHeYzJgzEbOpW8f8JxWh1RcgVs3zDUHJIqOxtpeDlcoHIL2irZBmq2449QZAlzptLyYzKcwF9vijZCqIAQykZCbfhnBkcwfR9YcVbR9ZACzQcuB7SH1WZCUI6OqWJgESaMX8KUf65tObe8UBmTZBOrYd8S59M8khU";
+$PHONE_NUMBER_ID = "922340430959332"; // TU PHONE NUMBER ID
 
-// -------------------------------------
-// 1️⃣ VERIFICACIÓN DEL WEBHOOK (GET)
-// -------------------------------------
+// ----------------------------------------------------------
+// VERIFICACIÓN DEL WEBHOOK (GET)
+// ----------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $mode = $_GET['hub_mode'] ?? null;
@@ -15,64 +17,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $challenge = $_GET['hub_challenge'] ?? null;
 
     if ($mode === 'subscribe' && $token === $VERIFY_TOKEN) {
-        // Responder el reto de verificación
-        http_response_code(200);
+        header('HTTP/1.1 200 OK');
         echo $challenge;
         exit;
     } else {
-        http_response_code(403);
-        echo "Token no válido";
+        header('HTTP/1.1 403 Forbidden');
+        echo "Token inválido";
         exit;
     }
 }
 
-// -------------------------------------
-// 2️⃣ RECEPCIÓN DE MENSAJES (POST) v24.0
-// -------------------------------------
+// ----------------------------------------------------------
+// RECEPCIÓN DE MENSAJES (POST)
+// ----------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // Obtener JSON enviado por WhatsApp
-    $input = file_get_contents("php://input");
-    $data = json_decode($input, true);
+    $data = json_decode(file_get_contents("php://input"), true);
 
-    // Registrar en logs (opcional)
-    file_put_contents("whatsapp_log.txt", $input . PHP_EOL, FILE_APPEND);
-
-    // Validar estructura básica
+    // Verifica existencia de mensajes
     if (isset($data["entry"][0]["changes"][0]["value"]["messages"][0])) {
 
-        $msg = $data["entry"][0]["changes"][0]["value"]["messages"][0];
+        $message = $data["entry"][0]["changes"][0]["value"]["messages"][0];
+        $from = $message["from"]; // Número del usuario
+        $text = $message["text"]["body"] ?? ""; // Texto recibido
 
-        $from = $msg["from"]; // número del remitente
-        $type = $msg["type"]; // tipo de mensaje
+        // ------------------------------------------------------
+        // RESPUESTA AUTOMÁTICA DEL BOT
+        // ------------------------------------------------------
+        enviarMensajeWhatsApp($from, "👋 Hola! Soy tu bot de compras. ¿En qué puedo ayudarte?");
 
-        // Mensajes de texto
-        if ($type === "text") {
-            $body = $msg["text"]["body"];
-
-            // Aquí procesas tu lógica
-            file_put_contents(
-                "mensajes_recibidos.txt",
-                "De: $from - Mensaje: $body" . PHP_EOL,
-                FILE_APPEND
-            );
-        }
     }
 
-    // Respuesta obligatoria
-    http_response_code(200);
+    header("HTTP/1.1 200 OK");
     echo "EVENT_RECEIVED";
     exit;
 }
 
-// -------------------------------------
-// SI NO ES GET O POST
-// -------------------------------------
-http_response_code(404);
-echo "Not Found";
-exit;
+// ----------------------------------------------------------
+// FUNCIÓN PARA ENVIAR MENSAJES A WHATSAPP
+// ----------------------------------------------------------
+function enviarMensajeWhatsApp($to, $mensaje) {
+    global $ACCESS_TOKEN, $PHONE_NUMBER_ID;
+
+    $url = "https://graph.facebook.com/v24.0/" . $PHONE_NUMBER_ID . "/messages";
+
+    $payload = [
+        "messaging_product" => "whatsapp",
+        "to" => $to,
+        "type" => "text",
+        "text" => ["body" => $mensaje]
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Authorization: Bearer $ACCESS_TOKEN",
+        "Content-Type: application/json"
+    ]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    return $response;
+}
 
 ?>
+
 
 
 
