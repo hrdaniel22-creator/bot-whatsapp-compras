@@ -1,86 +1,58 @@
 <?php
 
-// -----------------------------------------------------
-// ⚠️ CONFIGURACIÓN – REEMPLAZA ESTOS DATOS
-// -----------------------------------------------------
+// ==== CONFIGURACIÓN ====
+$VERIFY_TOKEN = "mibot2025";
+$ACCESS_TOKEN = "EAAeBmNouXW4BQPM04CH9VLgDrjZA4nyiCvBtf3LzS5DPgvbabn9st5sgLy6UW6Wi6UvMbRjy8ZAEuaN5NtPUUCg5mO4uQZAxVlChY22Vx3chYkbut73hqlXjRiHeYzJgzEbOpW8f8JxWh1RcgVs3zDUHJIqOxtpeDlcoHIL2irZBmq2449QZAlzptLyYzKcwF9vijZCqIAQykZCbfhnBkcwfR9YcVbR9ZACzQcuB7SH1WZCUI6OqWJgESaMX8KUf65tObe8UBmTZBOrYd8S59M8khU";
+$PHONE_NUMBER_ID = "922340430959332";
 
-$VERIFY_TOKEN = "mibot2025";  // <-- tu verify token
-$ACCESS_TOKEN = "TU_ACCESS_TOKEN_AQUI";  // <-- NO pegues tu token real en ChatGPT
-$PHONE_NUMBER_ID = "922340430959332";  // <-- tu Phone Number ID oficial
-
-// -----------------------------------------------------
-// VERIFICACIÓN DEL WEBHOOK (GET)
-// -----------------------------------------------------
+// ==== VERIFICACIÓN DEL WEBHOOK ====
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-
-    $mode = $_GET['hub_mode'] ?? '';
-    $token = $_GET['hub_verify_token'] ?? '';
-    $challenge = $_GET['hub_challenge'] ?? '';
-
-    if ($mode === 'subscribe' && $token === $VERIFY_TOKEN) {
-        header('HTTP/1.1 200 OK');
-        echo $challenge;
+    if ($_GET['hub_verify_token'] === $VERIFY_TOKEN) {
+        echo $_GET['hub_challenge'];
         exit;
     } else {
-        header('HTTP/1.1 403 Forbidden');
-        echo "Token inválido";
+        echo "Token de verificación incorrecto";
         exit;
     }
 }
 
-// -----------------------------------------------------
-// RECEPCIÓN DE MENSAJES (POST)
-// -----------------------------------------------------
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// ==== RECEPCIÓN DE MENSAJES ====
+$body = file_get_contents("php://input");
+$data = json_decode($body, true);
 
-    $data = json_decode(file_get_contents('php://input'), true);
+file_put_contents("log.txt", $body . PHP_EOL, FILE_APPEND);
 
-    if (!empty($data["entry"][0]["changes"][0]["value"]["messages"][0])) {
+if (isset($data["entry"][0]["changes"][0]["value"]["messages"][0])) {
+    
+    $message = $data["entry"][0]["changes"][0]["value"]["messages"][0];
+    $from = $message["from"];
+    $text = $message["text"]["body"] ?? "";
 
-        $message = $data["entry"][0]["changes"][0]["value"]["messages"][0];
-        $from = $message["from"];     
-        
-        // Texto recibido
-        $text = $message["text"]["body"] ?? "";
-
-        // Respuesta automática simple
-        enviarMensaje($from, "Hola 👋, recibí tu mensaje: $text");
-    }
-
-    header("HTTP/1.1 200 OK");
-    echo "EVENT_RECEIVED";
-    exit;
-}
-
-// -----------------------------------------------------
-// FUNCIÓN PARA ENVIAR MENSAJES A WHATSAPP
-// -----------------------------------------------------
-function enviarMensaje($to, $texto) {
-    global $ACCESS_TOKEN, $PHONE_NUMBER_ID;
-
-    $url = "https://graph.facebook.com/v24.0/$PHONE_NUMBER_ID/messages";
+    // ========= RESPUESTA AUTOMÁTICA =========
+    $url = "https://graph.facebook.com/v24.0/" . $PHONE_NUMBER_ID . "/messages";
 
     $payload = [
         "messaging_product" => "whatsapp",
-        "to" => $to,
+        "to" => $from,
         "type" => "text",
-        "text" => [ "body" => $texto ]
+        "text" => [
+            "body" => "Hola 👋, soy el bot de compras Jalisco.\nRecibí tu mensaje: '$text'"
+        ]
     ];
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "Authorization: Bearer $ACCESS_TOKEN",
-        "Content-Type: application/json"
-    ]);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $options = [
+        "http" => [
+            "header" => "Content-type: application/json\r\nAuthorization: Bearer $ACCESS_TOKEN\r\n",
+            "method" => "POST",
+            "content" => json_encode($payload)
+        ]
+    ];
 
-    $result = curl_exec($ch);
-    curl_close($ch);
-
-    return $result;
+    $context = stream_context_create($options);
+    file_get_contents($url, false, $context);
 }
-?>
+
+echo "EVENT_RECEIVED";
 
 
 
