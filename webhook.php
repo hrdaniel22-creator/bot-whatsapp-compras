@@ -1,15 +1,15 @@
 <?php
-// ================================
-// CONFIGURACIÓN
-// ================================
+
 $VERIFY_TOKEN = "mibot2025";
 
-// ================================
-// VERIFICACIÓN DEL WEBHOOK (GET)
-// ================================
+/**
+ * =========================
+ * VERIFICACIÓN DE WEBHOOK
+ * =========================
+ */
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
-    $mode = $_GET['hub_mode'] ?? '';
+    $mode  = $_GET['hub_mode'] ?? '';
     $token = $_GET['hub_verify_token'] ?? '';
     $challenge = $_GET['hub_challenge'] ?? '';
 
@@ -24,22 +24,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     exit;
 }
 
-// ================================
-// RECEPCIÓN DE MENSAJES (POST)
-// ================================
+/**
+ * =========================
+ * RECEPCIÓN DE MENSAJES
+ * =========================
+ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $input = file_get_contents("php://input");
 
-    // Guardar logs para depuración
-    file_put_contents("log.txt", date("Y-m-d H:i:s") . " " . $input . PHP_EOL, FILE_APPEND);
+    // Guarda logs para depuración
+    file_put_contents(__DIR__ . "/log.txt", $input . PHP_EOL, FILE_APPEND);
 
     http_response_code(200);
     echo "EVENT_RECEIVED";
     exit;
 }
 
-// ================================
 http_response_code(404);
 echo "Not Found";
 
